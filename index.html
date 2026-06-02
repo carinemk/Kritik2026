@@ -413,20 +413,38 @@ const SUPABASE = {
 };
 const USE_SUPABASE = !!(SUPABASE.url && SUPABASE.anonKey);
 
-function sbHeaders(){
-  return { "apikey":SUPABASE.anonKey, "Authorization":"Bearer "+SUPABASE.anonKey,
-           "Content-Type":"application/json" };
+let lastCloudError="";
+function sbHeaders(extra){
+  // apikey alone is the supported mode for the new sb_publishable_ keys
+  return Object.assign({ "apikey":SUPABASE.anonKey }, extra||{});
 }
 async function sbInsert(entry){
   const res=await fetch(SUPABASE.url+"/rest/v1/"+SUPABASE.table,
-    { method:"POST", headers:{...sbHeaders(),"Prefer":"return=minimal"}, body:JSON.stringify(entry) });
-  if(!res.ok) throw new Error("insert "+res.status);
+    { method:"POST",
+      headers:sbHeaders({ "Content-Type":"application/json", "Prefer":"return=minimal" }),
+      body:JSON.stringify(entry) });
+  if(!res.ok){
+    lastCloudError=res.status+" "+(await res.text().catch(()=>""));
+    console.error("Supabase insert failed:", lastCloudError);
+    throw new Error(lastCloudError);
+  }
 }
 async function sbList(){
   const res=await fetch(SUPABASE.url+"/rest/v1/"+SUPABASE.table+"?select=*&order=ts.desc",
     { headers:sbHeaders() });
-  if(!res.ok) throw new Error("list "+res.status);
+  if(!res.ok){
+    lastCloudError=res.status+" "+(await res.text().catch(()=>""));
+    console.error("Supabase list failed:", lastCloudError);
+    throw new Error(lastCloudError);
+  }
   return await res.json();
+}
+function cloudHint(){
+  const e=(lastCloudError||"").toLowerCase();
+  if(e.includes("does not exist"))        return 'Table missing — run the setup SQL in Supabase';
+  if(e.includes("row-level security"))    return 'Blocked by security rules — re-run the policy SQL';
+  if(e.includes("invalid")||e.includes("401")||e.includes("403")) return 'Key/project issue — check your Supabase keys';
+  return 'Could not reach the cloud — try again';
 }
 
 /* ============================================================
@@ -804,7 +822,7 @@ async function saveEntry(){
       toast('Sealed for 2032 🔒');
       refreshCapsule();
     }catch(e){
-      toast('Could not reach the cloud — try again');
+      toast(cloudHint());
     }
     return;
   }
