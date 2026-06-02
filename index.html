@@ -1,0 +1,872 @@
+<!--
+  KRITIK @ 7 — Origin Story & Time Capsule
+  A self-contained interactive event experience.
+  - The Story So Far  : animated infographic / timeline
+  - Origin Story Quiz : Kahoot-style, host-editable, scored
+  - Time Capsule       : writable prompts, saved + sealed for 2032
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,500&family=Hanken+Grotesk:wght@400;500;600;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ink:#0a0d23;
+    --ink-2:#0d1230;
+    --panel:rgba(255,255,255,.045);
+    --panel-2:rgba(255,255,255,.07);
+    --line:rgba(255,255,255,.12);
+    --text:#f4f1e8;
+    --muted:#a9b0d6;
+    --gold:#ffcf5c;
+    --gold-deep:#f5a623;
+    --coral:#ff6b6b;
+    --mint:#43e8c3;
+    --violet:#9b8cff;
+    --blue:#5b8cff;
+    --display:'Fraunces',Georgia,serif;
+    --body:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--body);
+    color:var(--text);
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(155,140,255,.18), transparent 55%),
+      radial-gradient(1000px 800px at 110% 10%, rgba(67,232,195,.12), transparent 55%),
+      radial-gradient(900px 600px at 50% 120%, rgba(245,166,35,.14), transparent 55%),
+      linear-gradient(180deg,var(--ink),var(--ink-2));
+    min-height:100vh;
+    overflow-x:hidden;
+    position:relative;
+  }
+  /* grain */
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+  #fx{position:fixed;inset:0;z-index:60;pointer-events:none}
+  .wrap{position:relative;z-index:2;max-width:1060px;margin:0 auto;padding:28px 22px 90px}
+
+  /* ---------- shared ui ---------- */
+  .eyebrow{font-size:.74rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .btn{
+    font-family:var(--body);font-weight:700;font-size:1rem;border:none;cursor:pointer;border-radius:999px;
+    padding:14px 26px;color:var(--ink);background:linear-gradient(180deg,var(--gold),var(--gold-deep));
+    box-shadow:0 10px 30px rgba(245,166,35,.32);transition:transform .15s,box-shadow .15s;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(245,166,35,.45)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line);box-shadow:none}
+  .btn.ghost:hover{background:var(--panel);transform:translateY(-2px)}
+  .btn.small{padding:9px 16px;font-size:.85rem}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--panel)}
+
+  /* ---------- views ---------- */
+  .view{display:none;animation:fade .5s ease both}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* ---------- HUB ---------- */
+  .hero{text-align:center;padding:46px 10px 12px}
+  .badge6{
+    display:inline-grid;place-items:center;width:118px;height:118px;border-radius:50%;margin:0 auto 18px;
+    background:radial-gradient(circle at 30% 25%,#fff3d0,var(--gold) 45%,var(--gold-deep));
+    color:#4a2d00;font-family:var(--display);font-weight:900;font-size:3.4rem;line-height:1;
+    box-shadow:0 0 0 8px rgba(255,207,92,.14),0 0 60px rgba(255,207,92,.45);
+    animation:pulse 4s ease-in-out infinite;
+  }
+  @keyframes pulse{50%{box-shadow:0 0 0 14px rgba(255,207,92,.08),0 0 80px rgba(255,207,92,.6)}}
+  h1.title{font-family:var(--display);font-weight:900;font-size:clamp(2.6rem,7vw,5rem);line-height:.95;margin:.1em 0 .15em;
+    letter-spacing:-.02em;background:linear-gradient(180deg,#fff,#d9d3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .title em{font-style:italic;font-weight:500;color:var(--mint);-webkit-text-fill-color:var(--mint)}
+  .sub{color:var(--muted);max-width:560px;margin:0 auto;font-size:1.06rem;line-height:1.55}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:42px}
+  @media(max-width:760px){.cards{grid-template-columns:1fr}}
+  .card{
+    position:relative;text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:22px;
+    padding:26px 24px 24px;background:var(--panel);overflow:hidden;transition:transform .2s,border-color .2s,background .2s;
+    animation:rise .6s ease both;
+  }
+  .card:nth-child(1){animation-delay:.05s}
+  .card:nth-child(2){animation-delay:.13s}
+  .card:nth-child(3){animation-delay:.21s}
+  @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+  .card:hover{transform:translateY(-6px);background:var(--panel-2);border-color:rgba(255,207,92,.5)}
+  .card .glow{position:absolute;inset:auto -40% -60% auto;width:200px;height:200px;border-radius:50%;filter:blur(40px);opacity:.5;transition:opacity .2s}
+  .card:hover .glow{opacity:.85}
+  .card .ico{font-size:2.4rem;display:block;margin-bottom:14px}
+  .card h3{font-family:var(--display);font-weight:600;font-size:1.5rem;margin:0 0 6px;color:#fff}
+  .card p{color:var(--muted);font-size:.92rem;line-height:1.5;margin:0 0 16px}
+  .card .go{font-weight:700;font-size:.86rem;color:var(--gold);display:inline-flex;gap:6px;align-items:center}
+  .card:hover .go{transform:translateX(3px)}
+  .footnote{text-align:center;color:var(--muted);font-size:.82rem;margin-top:34px;opacity:.8}
+
+  /* ---------- section chrome ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px;flex-wrap:wrap}
+  .back{display:inline-flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-weight:600;font-size:.9rem;
+    border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:9px 16px;transition:.15s}
+  .back:hover{color:var(--text);background:var(--panel-2)}
+  .sec-h{font-family:var(--display);font-weight:900;font-size:clamp(2rem,5vw,3.1rem);margin:0;letter-spacing:-.02em}
+
+  /* ---------- STORY ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:8px 0 40px}
+  @media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{border:1px solid var(--line);border-radius:18px;padding:20px 16px;background:var(--panel);text-align:center}
+  .stat .n{font-family:var(--display);font-weight:900;font-size:2.3rem;line-height:1;color:var(--gold)}
+  .stat .l{color:var(--muted);font-size:.82rem;margin-top:7px;letter-spacing:.02em}
+  .timeline{position:relative;margin:0 0 12px;padding-left:30px}
+  .timeline::before{content:"";position:absolute;left:9px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(180deg,var(--gold),var(--mint),var(--violet))}
+  .tl{position:relative;padding:0 0 26px 10px;cursor:pointer}
+  .tl::before{content:"";position:absolute;left:-26px;top:4px;width:14px;height:14px;border-radius:50%;
+    background:var(--ink);border:3px solid var(--gold);box-shadow:0 0 0 4px rgba(255,207,92,.12);transition:.2s}
+  .tl:hover::before{background:var(--gold);transform:scale(1.15)}
+  .tl .yr{font-family:var(--display);font-weight:600;color:var(--mint);font-size:1.05rem}
+  .tl h4{margin:.15em 0 .2em;font-size:1.12rem}
+  .tl .body{max-height:0;overflow:hidden;transition:max-height .35s ease,opacity .3s;opacity:0;color:var(--muted);font-size:.94rem;line-height:1.55}
+  .tl.open .body{max-height:200px;opacity:1;margin-top:6px}
+  .tl .hint{color:var(--muted);font-size:.78rem;opacity:.7}
+  .tl.open .hint{display:none}
+
+  /* ---------- QUIZ ---------- */
+  .quiz-stage{max-width:760px;margin:0 auto}
+  .progress{height:8px;border-radius:999px;background:var(--panel-2);overflow:hidden;margin-bottom:8px}
+  .progress > i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,var(--mint),var(--gold));transition:width .4s}
+  .qmeta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin-bottom:18px}
+  .qcard{border:1px solid var(--line);border-radius:22px;background:var(--panel);padding:30px 26px;animation:fade .35s both}
+  .qtag{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--violet);font-weight:600}
+  .qtext{font-family:var(--display);font-weight:600;font-size:clamp(1.4rem,3.5vw,2rem);line-height:1.2;margin:8px 0 22px}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.opts{grid-template-columns:1fr}}
+  .opt{display:flex;align-items:center;gap:13px;text-align:left;cursor:pointer;border:none;border-radius:16px;
+    padding:18px 18px;font-family:var(--body);font-weight:600;font-size:1rem;color:#10122b;transition:transform .12s,filter .12s;position:relative}
+  .opt:hover{transform:translateY(-2px);filter:brightness(1.05)}
+  .opt .sh{width:26px;height:26px;flex:0 0 26px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.8rem}
+  .opt:nth-child(1){background:linear-gradient(135deg,#ff8585,var(--coral))}
+  .opt:nth-child(2){background:linear-gradient(135deg,#7ea8ff,var(--blue))}
+  .opt:nth-child(3){background:linear-gradient(135deg,#ffe08a,var(--gold-deep))}
+  .opt:nth-child(4){background:linear-gradient(135deg,#6ff0d3,var(--mint))}
+  .opt.dim{opacity:.32;filter:grayscale(.4)}
+  .opt.right{outline:3px solid #fff;box-shadow:0 0 0 6px rgba(67,232,195,.4),0 10px 30px rgba(67,232,195,.4);transform:translateY(-2px)}
+  .opt.wrong{outline:3px solid #fff;box-shadow:0 0 0 6px rgba(255,107,107,.4);opacity:.9}
+  .explain{margin-top:18px;padding:15px 16px;border-radius:14px;background:rgba(67,232,195,.1);border:1px solid rgba(67,232,195,.3);
+    color:#d7fff4;font-size:.95rem;line-height:1.5;display:none}
+  .explain.show{display:block;animation:fade .3s both}
+  .qfoot{display:flex;justify-content:flex-end;margin-top:20px}
+  .result{text-align:center;max-width:560px;margin:30px auto;border:1px solid var(--line);border-radius:24px;background:var(--panel);padding:40px 28px}
+  .result .score{font-family:var(--display);font-weight:900;font-size:4rem;line-height:1;color:var(--gold)}
+  .result .rank{font-family:var(--display);font-weight:600;font-size:1.6rem;margin:6px 0 10px}
+  .result p{color:var(--muted)}
+
+  /* host editor */
+  .editor{display:none;border:1px dashed rgba(255,207,92,.4);border-radius:18px;padding:18px;margin-bottom:20px;background:rgba(255,207,92,.05)}
+  .editor.show{display:block}
+  .ed-q{border-bottom:1px solid var(--line);padding:12px 0}
+  .ed-q:last-child{border-bottom:none}
+  .ed-q label{font-size:.72rem;color:var(--muted);display:block;margin:6px 0 3px;letter-spacing:.05em}
+  .ed-q input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:9px;color:var(--text);
+    font-family:var(--body);padding:8px 10px;font-size:.9rem}
+  .ed-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ed-opt{display:flex;align-items:center;gap:6px}
+  .ed-opt input[type=text]{flex:1}
+
+  /* ---------- CAPSULE ---------- */
+  .cap-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:8px}
+  .seal{display:inline-flex;align-items:center;gap:9px;border:1px solid rgba(255,207,92,.4);background:rgba(255,207,92,.08);
+    border-radius:999px;padding:9px 16px;font-size:.85rem;color:var(--gold);font-weight:600}
+  .syncpill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);
+    border-radius:999px;padding:9px 14px;font-size:.82rem;color:var(--muted);font-weight:600}
+  .syncpill .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+  .syncpill.live{color:var(--mint);border-color:rgba(67,232,195,.4);background:rgba(67,232,195,.08)}
+  .syncpill.live .dot{background:var(--mint);box-shadow:0 0 0 0 rgba(67,232,195,.6);animation:ping 1.8s ease-out infinite}
+  .syncpill.local{color:var(--gold);border-color:rgba(255,207,92,.4);background:rgba(255,207,92,.08)}
+  .syncpill.local .dot{background:var(--gold)}
+  @keyframes ping{0%{box-shadow:0 0 0 0 rgba(67,232,195,.55)}70%{box-shadow:0 0 0 7px rgba(67,232,195,0)}100%{box-shadow:0 0 0 0 rgba(67,232,195,0)}}
+  .prompts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:22px 0}
+  @media(max-width:680px){.prompts{grid-template-columns:1fr}}
+  .prompt{display:flex;gap:12px;align-items:flex-start;text-align:left;cursor:pointer;border:1px solid var(--line);
+    border-radius:16px;padding:16px;background:var(--panel);transition:.18s;font-family:var(--body)}
+  .prompt:hover{transform:translateY(-3px);border-color:rgba(155,140,255,.5);background:var(--panel-2)}
+  .prompt .e{font-size:1.5rem;flex:0 0 auto}
+  .prompt .t{font-size:.96rem;line-height:1.4;color:var(--text)}
+  .prompt .c{font-size:.74rem;color:var(--mint);margin-top:5px;font-weight:600}
+
+  .tabbar{display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap}
+  .tab{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;
+    padding:8px 16px;font-weight:600;font-size:.86rem;font-family:var(--body);transition:.15s}
+  .tab.active{color:var(--ink);background:linear-gradient(180deg,var(--gold),var(--gold-deep));border-color:transparent}
+
+  .gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}
+  @media(max-width:680px){.gallery{grid-template-columns:1fr}}
+  .entry{border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px;background:var(--panel);animation:fade .4s both}
+  .entry .ep{font-size:.76rem;color:var(--violet);font-weight:600;letter-spacing:.02em}
+  .entry .ea{font-family:var(--display);font-size:1.05rem;line-height:1.35;margin:7px 0 9px;font-weight:500;font-style:italic}
+  .entry .en{font-size:.8rem;color:var(--muted)}
+  .empty{text-align:center;color:var(--muted);padding:40px 20px;border:1px dashed var(--line);border-radius:18px;margin-top:18px}
+
+  /* modal */
+  .modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:20px;
+    background:rgba(5,7,20,.7);backdrop-filter:blur(6px)}
+  .modal.show{display:flex;animation:fade .25s both}
+  .sheet{width:100%;max-width:560px;border:1px solid var(--line);border-radius:24px;
+    background:linear-gradient(180deg,#161b3d,#10142e);padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .sheet .pe{font-size:1.8rem}
+  .sheet h3{font-family:var(--display);font-weight:600;font-size:1.4rem;margin:8px 0 4px;line-height:1.25}
+  .sheet textarea{width:100%;min-height:120px;resize:vertical;margin-top:14px;background:rgba(0,0,0,.28);
+    border:1px solid var(--line);border-radius:14px;color:var(--text);font-family:var(--body);font-size:1rem;padding:14px;line-height:1.5}
+  .sheet textarea:focus{outline:none;border-color:var(--gold)}
+  .sheet .name{width:100%;margin-top:10px;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;
+    color:var(--text);font-family:var(--body);padding:11px 14px;font-size:.95rem}
+  .sheet .row{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(40px);z-index:90;
+    background:linear-gradient(180deg,var(--mint),#23c5a3);color:#04231c;font-weight:700;padding:13px 22px;border-radius:999px;
+    box-shadow:0 16px 40px rgba(67,232,195,.4);opacity:0;transition:.35s}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+
+<canvas id="stars"></canvas>
+<canvas id="fx"></canvas>
+
+<div class="wrap">
+
+  <!-- ============ HUB ============ -->
+  <section class="view active" id="hub">
+    <div class="hero">
+      <div class="badge6">7</div>
+      <div class="eyebrow">Kritik · Est. June 2019 · Toronto</div>
+      <h1 class="title">Seven Years of<br><em>thinking better</em></h1>
+      <p class="sub">A little celebration of where we've been — and a message to the Kritik of 2032. Tap a card to dive in.</p>
+    </div>
+
+    <div class="cards">
+      <button class="card" onclick="go('story')">
+        <span class="glow" style="background:var(--mint)"></span>
+        <span class="ico">🗺️</span>
+        <h3>The Story So Far</h3>
+        <p>Click through Kritik's origin story — the founders, the milestones, the numbers behind the name.</p>
+        <span class="go">Explore the timeline →</span>
+      </button>
+
+      <button class="card" onclick="go('quiz')">
+        <span class="glow" style="background:var(--coral)"></span>
+        <span class="ico">🎯</span>
+        <h3>Origin Story Quiz</h3>
+        <p>A fast, Kahoot-style quiz on Kritik history. How well do you really know the company?</p>
+        <span class="go">Start the quiz →</span>
+      </button>
+
+      <button class="card" onclick="go('capsule')">
+        <span class="glow" style="background:var(--violet)"></span>
+        <span class="ico">🕰️</span>
+        <h3>The Time Capsule</h3>
+        <p>Leave a message for the team in 2032. Answer a few prompts — we'll seal them away.</p>
+        <span class="go">Add your message →</span>
+      </button>
+    </div>
+    <p class="footnote">Best on a big screen. Quiz answers are editable by the host · Time capsule entries can be exported to keep for 6 years.</p>
+  </section>
+
+  <!-- ============ STORY ============ -->
+  <section class="view" id="story">
+    <div class="topbar">
+      <span class="back" onclick="go('hub')">← Back</span>
+      <span class="pill">🗺️ The Story So Far</span>
+    </div>
+    <div class="eyebrow">Since 2019</div>
+    <h2 class="sec-h">From "got it right?" to <em style="font-style:italic;color:var(--mint);font-family:var(--display)">"thinking better?"</em></h2>
+    <p class="sub" style="margin:14px 0 26px 0;text-align:left;max-width:680px">
+      Kritik was born to flip the question at the heart of education — away from whether students memorized the answer, toward whether they're actually getting better at thinking. Here's the journey so far.
+    </p>
+
+    <div class="stats" id="storyStats"></div>
+
+    <div class="timeline" id="timeline"></div>
+    <p class="footnote" style="text-align:left">Tap any milestone to expand it. Got dates or numbers to fix? Update them in the source — they're all in one place.</p>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="view" id="quiz">
+    <div class="topbar">
+      <span class="back" onclick="go('hub')">← Back</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn ghost small" id="editToggle" onclick="toggleEditor()">✎ Host setup</button>
+      </div>
+    </div>
+
+    <div class="editor" id="editor">
+      <strong style="font-family:var(--display)">Host setup</strong>
+      <p style="color:var(--muted);font-size:.86rem;margin:6px 0 4px">Edit any question, set the correct answer (the ⦿ button), and the note shown after answering. Some questions only your team knows — fill those in before the event. Saves for everyone who opens this.</p>
+      <div id="edList"></div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn small" onclick="saveQuiz()">Save questions</button>
+        <button class="btn ghost small" onclick="resetQuiz()">Reset to defaults</button>
+      </div>
+    </div>
+
+    <div class="quiz-stage" id="quizStage">
+      <!-- intro -->
+      <div id="quizIntro" style="text-align:center;padding:20px 0">
+        <span class="ico" style="font-size:3rem">🎯</span>
+        <h2 class="sec-h">The Origin Story Quiz</h2>
+        <p class="sub" style="margin:12px auto 24px">A handful of questions about Kritik's history. No pressure. Mostly.</p>
+        <button class="btn" onclick="startQuiz()">Let's play →</button>
+      </div>
+      <!-- live quiz injected here -->
+      <div id="quizLive" style="display:none"></div>
+      <!-- result -->
+      <div id="quizResult" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- ============ CAPSULE ============ -->
+  <section class="view" id="capsule">
+    <div class="topbar">
+      <span class="back" onclick="go('hub')">← Back</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="syncpill" id="syncPill"><i class="dot"></i><span id="syncTxt">Connecting…</span></span>
+        <span class="seal" id="sealCount">🔒 0 messages sealed</span>
+      </div>
+    </div>
+    <div class="cap-head">
+      <div>
+        <div class="eyebrow">To be opened in 2032</div>
+        <h2 class="sec-h">The Kritik Time Capsule</h2>
+      </div>
+    </div>
+    <p class="sub" style="text-align:left;max-width:700px;margin:14px 0 6px">
+      If someone opened this capsule six years from now, what would you want them to know about this version of Kritik? Pick a prompt, leave your answer — serious, funny, or motivational. Everyone's answers land in the <strong>same shared capsule</strong>, no matter which browser they're on. We'll seal it all away. 🚀
+    </p>
+
+    <div class="tabbar">
+      <button class="tab active" id="tabWrite" onclick="capTab('write')">✍️ Leave a message</button>
+      <button class="tab" id="tabRead" onclick="capTab('read')">📜 Read the capsule</button>
+    </div>
+
+    <div id="capWrite">
+      <div class="prompts" id="prompts"></div>
+    </div>
+
+    <div id="capRead" style="display:none">
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;flex-wrap:wrap">
+        <button class="btn ghost small" onclick="exportCapsule()">⬇ Export for 2032</button>
+        <button class="btn ghost small" onclick="clearCapsule()">Clear all (host)</button>
+      </div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </section>
+</div>
+
+<!-- capsule write modal -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <span class="pe" id="mEmoji">🕰️</span>
+    <h3 id="mPrompt">Prompt</h3>
+    <textarea id="mAnswer" placeholder="Type your message to the team of 2032…"></textarea>
+    <input class="name" id="mName" placeholder="Your name (optional)">
+    <div class="row">
+      <button class="btn ghost small" onclick="closeModal()">Cancel</button>
+      <button class="btn small" onclick="saveEntry()">Seal it 🔒</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved!</div>
+
+<script>
+/* ============================================================
+   ★ COLLECT ACROSS ALL BROWSERS — paste your Google Form here ★
+   ------------------------------------------------------------
+   1. Make a Google Form with 3 short-answer questions, in this order:
+        (1) Prompt   (2) Your message   (3) Your name (optional)
+   2. In the form, click ⋮  →  "Get pre-filled link".
+        Type any dummy text in each box, click "Get link", copy it.
+        The copied URL looks like:
+        https://docs.google.com/forms/d/e/FORM_ID/viewform?usp=pp_url
+          &entry.111111=dummy&entry.222222=dummy&entry.333333=dummy
+   3. Paste the pieces below. The three entry numbers are in the
+      SAME order as your questions (prompt, message, name).
+   4. (Optional) responsesUrl: Responses tab → link to Sheets →
+      share that Sheet "anyone with link can view" → paste its URL.
+
+   Leave formId "" to keep single-screen mode (in-artifact storage).
+   ============================================================ */
+const GOOGLE_FORM = {
+  formId:      "",   // the long ID between /forms/d/e/  and  /viewform
+  promptEntry: "",   // e.g. "111111"  — the "Prompt" field
+  answerEntry: "",   // e.g. "222222"  — the "Your message" field
+  nameEntry:   "",   // e.g. "333333"  — the "Your name" field
+  responsesUrl:""    // optional: link to the responses Google Sheet
+};
+const USE_FORM = !!(GOOGLE_FORM.formId && GOOGLE_FORM.answerEntry);
+
+function prefillUrl(prompt, answer, name){
+  const b="https://docs.google.com/forms/d/e/"+GOOGLE_FORM.formId+"/viewform?usp=pp_url";
+  const p=[];
+  if(GOOGLE_FORM.promptEntry) p.push("entry."+GOOGLE_FORM.promptEntry+"="+encodeURIComponent(prompt));
+  if(GOOGLE_FORM.answerEntry) p.push("entry."+GOOGLE_FORM.answerEntry+"="+encodeURIComponent(answer));
+  if(GOOGLE_FORM.nameEntry)   p.push("entry."+GOOGLE_FORM.nameEntry+"="+encodeURIComponent(name||""));
+  return b+(p.length?"&"+p.join("&"):"");
+}
+function openExternal(url){
+  // most compatible way to open a new tab from a sandboxed artifact
+  const a=document.createElement('a');
+  a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ============================================================
+   DATA  — edit the defaults here to match Kritik exactly
+   ============================================================ */
+const DEFAULT_QUESTIONS = [
+  { tag:"Origins", q:"What year was Kritik founded?",
+    options:["2017","2018","2019","2021"], correct:2,
+    explain:"Kritik was founded in June 2019 in Toronto, Ontario." },
+  { tag:"Origins", q:"Which city is Kritik's home base?",
+    options:["Vancouver","Toronto","Boston","London"], correct:1,
+    explain:"Toronto, Ontario — a proudly Canadian, remote-first company." },
+  { tag:"Mission", q:"Kritik shifts assessment away from \u201cdid the student get it right?\u201d toward…",
+    options:["\u201cdid they finish fast?\u201d","\u201care they getting better at thinking?\u201d","\u201cdid they beat the curve?\u201d","\u201cdid they show up?\u201d"], correct:1,
+    explain:"The whole point: moving from right answers to better thinking, through peer assessment." },
+  { tag:"Product", q:"What do we call the combined grading + feedback score students earn?",
+    options:["The Peer Rank","The Kritik Score","The Trust Index","The Think Tank"], correct:1,
+    explain:"The Kritik Score = a grading score (fairness of evaluation) + a feedback score (quality of comments)." },
+  { tag:"Culture", q:"Kritik is a ______-first company.",
+    options:["Office","Remote","Hybrid","Campus"], correct:1,
+    explain:"Remote-first since the early days — talent from all around the world." },
+  { tag:"Founders", q:"A Kritik co-founder also helped build which famous edtech company?",
+    options:["Top Hat","Duolingo","Coursera","Quizlet"], correct:0,
+    explain:"Co-founder Mohsen Shahini co-founded Top Hat before starting Kritik." },
+  /* ---- team-only questions: host should confirm/edit these ---- */
+  { tag:"Team poll · edit me", q:"Which Kritik value gets used the most internally?",
+    options:["Ownership","Curiosity","Craft","Care"], correct:0,
+    explain:"Set the real answer in Host setup before the event!" },
+  { tag:"Team poll · edit me", q:"Which team has grown the most over the years?",
+    options:["Engineering","Sales","Customer Success","Marketing"], correct:0,
+    explain:"Update this with your own answer in Host setup." },
+  { tag:"By the numbers · edit me", q:"Roughly how many students has Kritik worked with?",
+    options:["Tens of thousands","100,000+","Half a million+","A million+"], correct:1,
+    explain:"Update with Kritik's current number in Host setup — this is a placeholder!" },
+];
+
+const STATS = [
+  { n:"2019", l:"Year founded" },
+  { n:"3", l:"Co-founders" },
+  { n:"100%", l:"Remote-first" },
+  { n:"🇨🇦", l:"Toronto-born" },
+];
+
+const TIMELINE = [
+  { yr:"2019", h:"Kritik is founded", b:"Mohsen Shahini (Top Hat co-founder), Carine Marette, and Mark Deepwell start Kritik in Toronto — built on a simple idea: students learn more by evaluating each other's work." },
+  { yr:"2020", h:"Peer assessment goes mainstream", b:"As classrooms went remote overnight, Kritik's peer-to-peer model and customizable rubrics gave educators a way to keep critical thinking — and engagement — alive online." },
+  { yr:"2021–22", h:"Building the Kritik Score", b:"Gamified grading + feedback scores reward fair evaluation and meaningful comments, turning assessment into a skill students actually practice." },
+  { yr:"2023–24", h:"Culture & community", b:"Remote-first team spanning the globe, annual Campaign Kick-offs (CKO), and a growing roster of universities and instructors." },
+  { yr:"2025", h:"Into the AI era — VisibleAI", b:"Rather than fight AI, Kritik makes its use visible: students work inside a window with access to LLMs, and how well they use AI becomes part of the evaluation." },
+  { yr:"2026", h:"Seven years in 🎉", b:"From a bold question to a platform reshaping how thinking is taught and trusted. This is the version of Kritik we're sealing into the capsule." },
+];
+
+const PROMPTS = [
+  { e:"🌱", t:"What's one thing we should never lose as we grow?" },
+  { e:"💪", t:"What's one thing we've survived that future Kritik should know about?" },
+  { e:"💌", t:"What's one message you'd leave for the team in 2032?" },
+  { e:"✨", t:"What's one Kritik moment you'll always remember?" },
+  { e:"🧠", t:"What's one thing you've learned from being part of Kritik?" },
+  { e:"🤪", t:"What's the most \u201cstartup life\u201d moment you've experienced here?" },
+  { e:"😂", t:"What's an inside joke or phrase that belongs in the capsule?" },
+  { e:"🎵", t:"What's one song that represents Kritik's last 7 years?" },
+  { e:"🎓", t:"What impact do you hope Kritik has on students in the next 6 years?" },
+  { e:"🚀", t:"What's one area where you hope Kritik becomes stronger?" },
+  { e:"📰", t:"If you wrote one headline about Kritik in 2032, what would it say?" },
+  { e:"🤝", t:"A moment someone showed real support, ownership, or creativity?" },
+  { e:"💛", t:"What's one thing you admire about the people at Kritik?" },
+];
+
+/* ============================================================
+   STORAGE  (window.storage on Claude.ai; in-memory fallback)
+   ============================================================ */
+const hasStore = typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+const mem = {}; // fallback store
+async function sGet(key, shared){
+  if(!hasStore){ return mem[key] ? {value:mem[key]} : null; }
+  try{ return await window.storage.get(key, shared); }catch(e){ return null; }
+}
+async function sSet(key, val, shared){
+  if(!hasStore){ mem[key]=val; return {value:val}; }
+  try{ return await window.storage.set(key, val, shared); }catch(e){ return null; }
+}
+async function sDel(key, shared){
+  if(!hasStore){ delete mem[key]; return {deleted:true}; }
+  try{ return await window.storage.delete(key, shared); }catch(e){ return null; }
+}
+async function sList(prefix, shared){
+  if(!hasStore){ return {keys:Object.keys(mem).filter(k=>k.startsWith(prefix))}; }
+  try{ return await window.storage.list(prefix, shared); }catch(e){ return {keys:[]}; }
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let QUESTIONS = DEFAULT_QUESTIONS.map(q=>({...q, options:[...q.options]}));
+let quiz = { idx:0, score:0, answered:false };
+let activePrompt = null;
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function go(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(id==='story') buildStory();
+  if(id==='capsule'){ refreshCapsule(); startCapsulePolling(); }
+  else stopCapsulePolling();
+}
+
+/* ============================================================
+   STORY
+   ============================================================ */
+let storyBuilt=false;
+function buildStory(){
+  if(storyBuilt) return; storyBuilt=true;
+  const s=document.getElementById('storyStats');
+  s.innerHTML=STATS.map(x=>`<div class="stat"><div class="n">${x.n}</div><div class="l">${x.l}</div></div>`).join('');
+  const t=document.getElementById('timeline');
+  t.innerHTML=TIMELINE.map((x,i)=>`
+    <div class="tl" onclick="this.classList.toggle('open')">
+      <div class="yr">${x.yr}</div>
+      <h4>${x.h} <span class="hint">— tap to read</span></h4>
+      <div class="body">${x.b}</div>
+    </div>`).join('');
+}
+
+/* ============================================================
+   QUIZ
+   ============================================================ */
+async function loadQuiz(){
+  const r = await sGet('kritik:quiz-config', true);
+  if(r && r.value){
+    try{ const parsed=JSON.parse(r.value); if(Array.isArray(parsed)&&parsed.length) QUESTIONS=parsed; }catch(e){}
+  }
+}
+function startQuiz(){
+  quiz={idx:0,score:0,answered:false};
+  document.getElementById('quizIntro').style.display='none';
+  document.getElementById('quizResult').style.display='none';
+  document.getElementById('quizLive').style.display='block';
+  renderQuestion();
+}
+function renderQuestion(){
+  const live=document.getElementById('quizLive');
+  const q=QUESTIONS[quiz.idx];
+  const pct=Math.round((quiz.idx)/QUESTIONS.length*100);
+  const shapes=['▲','◆','●','■'];
+  live.innerHTML=`
+    <div class="progress"><i style="width:${pct}%"></i></div>
+    <div class="qmeta"><span>Question ${quiz.idx+1} of ${QUESTIONS.length}</span><span>Score: ${quiz.score}</span></div>
+    <div class="qcard">
+      <div class="qtag">${q.tag}</div>
+      <div class="qtext">${q.q}</div>
+      <div class="opts">
+        ${q.options.map((o,i)=>`<button class="opt" data-i="${i}" onclick="answer(${i})">
+            <span class="sh">${shapes[i]||''}</span><span>${o}</span></button>`).join('')}
+      </div>
+      <div class="explain" id="explain"></div>
+      <div class="qfoot"><button class="btn" id="nextBtn" style="display:none" onclick="nextQuestion()">
+        ${quiz.idx+1>=QUESTIONS.length?'See results →':'Next →'}</button></div>
+    </div>`;
+  quiz.answered=false;
+}
+function answer(i){
+  if(quiz.answered) return; quiz.answered=true;
+  const q=QUESTIONS[quiz.idx];
+  const opts=document.querySelectorAll('.opt');
+  opts.forEach((el,idx)=>{
+    el.style.pointerEvents='none';
+    if(idx===q.correct) el.classList.add('right');
+    else if(idx===i) el.classList.add('wrong');
+    else el.classList.add('dim');
+  });
+  if(i===q.correct){ quiz.score++; burst(); }
+  const ex=document.getElementById('explain');
+  ex.innerHTML=(i===q.correct?'✅ Correct! ':'💡 ')+q.explain;
+  ex.classList.add('show');
+  document.getElementById('nextBtn').style.display='inline-block';
+}
+function nextQuestion(){
+  quiz.idx++;
+  if(quiz.idx>=QUESTIONS.length) return showResult();
+  renderQuestion();
+}
+function showResult(){
+  document.getElementById('quizLive').style.display='none';
+  const res=document.getElementById('quizResult');
+  res.style.display='block';
+  const total=QUESTIONS.length, sc=quiz.score, pct=sc/total;
+  let rank='Kritik Newcomer 🌱', msg="Plenty more origin story to discover!";
+  if(pct===1){ rank='Founding Legend 👑'; msg="A perfect score. You ARE the origin story."; }
+  else if(pct>=.8){ rank='Kritik Historian 📚'; msg="You know this company inside out."; }
+  else if(pct>=.5){ rank='Solid Insider 🎯'; msg="Nicely done — real Kritik knowledge here."; }
+  res.innerHTML=`
+    <div class="result">
+      <div class="score">${sc}/${total}</div>
+      <div class="rank">${rank}</div>
+      <p>${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+        <button class="btn" onclick="startQuiz()">Play again</button>
+        <button class="btn ghost" onclick="go('capsule')">Leave a time capsule message →</button>
+      </div>
+    </div>`;
+  confettiBurst();
+}
+
+/* ---- host editor ---- */
+function toggleEditor(){
+  const ed=document.getElementById('editor');
+  ed.classList.toggle('show');
+  if(ed.classList.contains('show')) buildEditor();
+}
+function buildEditor(){
+  const list=document.getElementById('edList');
+  list.innerHTML=QUESTIONS.map((q,qi)=>`
+    <div class="ed-q">
+      <label>Question ${qi+1} · tag</label>
+      <input value="${escapeAttr(q.tag)}" oninput="QUESTIONS[${qi}].tag=this.value">
+      <label>Question text</label>
+      <input value="${escapeAttr(q.q)}" oninput="QUESTIONS[${qi}].q=this.value">
+      <label>Options · click ⦿ to mark the correct one</label>
+      <div class="ed-opts">
+        ${q.options.map((o,oi)=>`<div class="ed-opt">
+            <button class="btn ghost small" style="padding:6px 10px" title="Mark correct"
+              onclick="QUESTIONS[${qi}].correct=${oi};buildEditor()">${q.correct===oi?'⦿':'○'}</button>
+            <input type="text" value="${escapeAttr(o)}" oninput="QUESTIONS[${qi}].options[${oi}]=this.value">
+          </div>`).join('')}
+      </div>
+      <label>Note shown after answering</label>
+      <input value="${escapeAttr(q.explain)}" oninput="QUESTIONS[${qi}].explain=this.value">
+    </div>`).join('');
+}
+async function saveQuiz(){
+  await sSet('kritik:quiz-config', JSON.stringify(QUESTIONS), true);
+  toast('Questions saved for everyone ✓');
+}
+async function resetQuiz(){
+  QUESTIONS=DEFAULT_QUESTIONS.map(q=>({...q,options:[...q.options]}));
+  await sDel('kritik:quiz-config', true);
+  buildEditor(); toast('Reset to defaults');
+}
+function escapeAttr(s){return String(s).replace(/"/g,'&quot;');}
+
+/* ============================================================
+   CAPSULE
+   ============================================================ */
+let capPoll=null, lastCount=-1, syncState='unknown';
+
+function setSync(state){
+  syncState=state;
+  const pill=document.getElementById('syncPill'), txt=document.getElementById('syncTxt');
+  pill.classList.remove('live','local');
+  if(state==='form'){ pill.classList.add('live'); txt.textContent='Live · collecting to Google Sheet'; }
+  else if(state==='live'){ pill.classList.add('live'); txt.textContent='Live · syncing across all browsers'; }
+  else if(state==='local'){ pill.classList.add('local'); txt.textContent='Single-screen mode (download to keep)'; }
+  else { txt.textContent='Connecting…'; }
+}
+
+/* probe the shared store so we can tell the user whether entries truly sync */
+async function probeSync(){
+  if(USE_FORM){ setSync('form'); return; }
+  if(!hasStore){ setSync('local'); return; }
+  try{
+    const probeKey='kritik:__sync_probe';
+    await window.storage.set(probeKey, String(Date.now()), true);
+    await window.storage.get(probeKey, true);   // round-trips through the shared store
+    setSync('live');
+  }catch(e){ setSync('local'); }
+}
+
+function startCapsulePolling(){
+  stopCapsulePolling();
+  if(USE_FORM) return;            // responses live in the Sheet; nothing local to poll
+  capPoll=setInterval(async ()=>{
+    const entries=await getEntries();
+    updateCount(entries.length);
+    // if the Read tab is open, keep the gallery fresh as others contribute
+    if(document.getElementById('capRead').style.display!=='none'){
+      if(entries.length!==lastGalleryCount) renderGallery(entries);
+    }
+  }, 5000);
+}
+function stopCapsulePolling(){ if(capPoll){ clearInterval(capPoll); capPoll=null; } }
+
+function updateCount(n){
+  if(n===lastCount) return;
+  lastCount=n;
+  document.getElementById('sealCount').textContent=`🔒 ${n} message${n===1?'':'s'} sealed`;
+}
+
+function capTab(which){
+  const w=which==='write';
+  document.getElementById('tabWrite').classList.toggle('active',w);
+  document.getElementById('tabRead').classList.toggle('active',!w);
+  document.getElementById('capWrite').style.display=w?'block':'none';
+  document.getElementById('capRead').style.display=w?'none':'block';
+  if(!w) renderGallery();
+}
+async function refreshCapsule(){
+  buildPrompts();
+  probeSync();
+  if(USE_FORM){
+    document.getElementById('sealCount').textContent='🔒 Collecting in Google Sheets';
+    return;
+  }
+  const entries=await getEntries();
+  updateCount(entries.length);
+}
+function buildPrompts(){
+  const p=document.getElementById('prompts');
+  p.innerHTML=PROMPTS.map((x,i)=>`
+    <button class="prompt" onclick="openModal(${i})">
+      <span class="e">${x.e}</span>
+      <span><span class="t">${x.t}</span><span class="c">Tap to answer →</span></span>
+    </button>`).join('');
+}
+function openModal(i){
+  activePrompt=PROMPTS[i];
+  document.getElementById('mEmoji').textContent=activePrompt.e;
+  document.getElementById('mPrompt').textContent=activePrompt.t;
+  document.getElementById('mAnswer').value='';
+  document.getElementById('mName').value=localGet('kritik-name')||'';
+  document.getElementById('modal').classList.add('show');
+  setTimeout(()=>document.getElementById('mAnswer').focus(),60);
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+function localGet(k){ return mem[k]; }
+async function saveEntry(){
+  const ans=document.getElementById('mAnswer').value.trim();
+  const name=document.getElementById('mName').value.trim();
+  if(!ans){ toast('Write something first 🙂'); return; }
+  mem['kritik-name']=name;
+  const entry={prompt:activePrompt.t, emoji:activePrompt.e, answer:ans, name:name||'Anonymous', ts:Date.now()};
+
+  if(USE_FORM){
+    // bulletproof cross-browser collection: send to the shared Google Form
+    openExternal(prefillUrl(activePrompt.t, ans, name));
+    closeModal();
+    toast('Opening the form — press Submit to seal it 🔒');
+    return;
+  }
+
+  // single-screen mode: store in the artifact's shared store
+  const key='kritik:entry:'+entry.ts+'_'+Math.random().toString(36).slice(2,7);
+  await sSet(key, JSON.stringify(entry), true);
+  closeModal();
+  toast('Sealed for 2032 🔒');
+  refreshCapsule();
+}
+async function getEntries(){
+  const r=await sList('kritik:entry:', true);
+  const keys=(r&&r.keys)||[];
+  const out=[];
+  for(const k of keys){
+    const v=await sGet(k, true);
+    if(v&&v.value){ try{ const e=JSON.parse(v.value); e._key=k; out.push(e);}catch(_){} }
+  }
+  out.sort((a,b)=>b.ts-a.ts);
+  return out;
+}
+let lastGalleryCount=-1;
+async function renderGallery(prefetched){
+  const g=document.getElementById('gallery');
+  if(USE_FORM){
+    g.innerHTML='<div class="empty">📊 Every sealed message is collected in your shared Google Sheet — open it in any browser, signed in or not.'
+      + (GOOGLE_FORM.responsesUrl
+          ? '<div style="margin-top:16px"><button class="btn small" onclick="openExternal(GOOGLE_FORM.responsesUrl)">Open the responses sheet →</button></div>'
+          : '<div style="margin-top:10px;font-size:.85rem">Add your Sheet link in the config to show an "Open responses" button here.</div>')
+      + '</div>';
+    return;
+  }
+  const entries = prefetched || (g.innerHTML='<div class="empty">Loading the capsule…</div>', await getEntries());
+  lastGalleryCount=entries.length;
+  if(!entries.length){ g.innerHTML='<div class="empty">The capsule is empty for now. Be the first to leave a message 💌</div>'; return; }
+  g.innerHTML=entries.map(e=>`
+    <div class="entry">
+      <div class="ep">${e.emoji} ${escapeHtml(e.prompt)}</div>
+      <div class="ea">\u201c${escapeHtml(e.answer)}\u201d</div>
+      <div class="en">— ${escapeHtml(e.name)} · ${new Date(e.ts).toLocaleDateString()}</div>
+    </div>`).join('');
+}
+async function exportCapsule(){
+  const entries=await getEntries();
+  if(!entries.length){ toast('Nothing to export yet'); return; }
+  let txt='KRITIK TIME CAPSULE — sealed '+new Date().toLocaleDateString()+'\nTo be opened in 2032 🚀\n\n';
+  entries.slice().reverse().forEach((e,i)=>{
+    txt+=`${i+1}. ${e.emoji} ${e.prompt}\n   "${e.answer}"\n   — ${e.name} (${new Date(e.ts).toLocaleDateString()})\n\n`;
+  });
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='kritik-time-capsule-2032.txt';
+  a.click();
+  toast('Downloaded — keep it safe till 2032!');
+}
+async function clearCapsule(){
+  if(!confirm('Clear ALL time capsule messages? This cannot be undone.')) return;
+  const r=await sList('kritik:entry:', true);
+  for(const k of ((r&&r.keys)||[])) await sDel(k, true);
+  refreshCapsule(); renderGallery(); toast('Capsule cleared');
+}
+function escapeHtml(s){return String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* ============================================================
+   FX  — starfield, sparkle burst, confetti, toast
+   ============================================================ */
+const starsC=document.getElementById('stars'), sx=starsC.getContext('2d');
+let stars=[];
+function sizeStars(){starsC.width=innerWidth;starsC.height=innerHeight;
+  stars=Array.from({length:Math.min(140,Math.floor(innerWidth/9))},()=>({
+    x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.4+.3,
+    a:Math.random(),s:Math.random()*.02+.004}));}
+function drawStars(){sx.clearRect(0,0,starsC.width,starsC.height);
+  for(const st of stars){st.a+=st.s;const o=.3+Math.abs(Math.sin(st.a))*.6;
+    sx.beginPath();sx.arc(st.x,st.y,st.r,0,7);sx.fillStyle=`rgba(255,245,220,${o})`;sx.fill();}
+  requestAnimationFrame(drawStars);}
+addEventListener('resize',sizeStars);sizeStars();drawStars();
+
+const fxC=document.getElementById('fx'), fx=fxC.getContext('2d');
+function sizeFx(){fxC.width=innerWidth;fxC.height=innerHeight;}
+addEventListener('resize',sizeFx);sizeFx();
+let parts=[];
+function tickFx(){fx.clearRect(0,0,fxC.width,fxC.height);
+  parts=parts.filter(p=>p.life>0);
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.life--;p.rot+=p.vr;
+    fx.save();fx.translate(p.x,p.y);fx.rotate(p.rot);fx.globalAlpha=Math.max(0,p.life/p.max);
+    fx.fillStyle=p.c;fx.fillRect(-p.s/2,-p.s/2,p.s,p.s);fx.restore();}
+  requestAnimationFrame(tickFx);}
+tickFx();
+const PAL=['#ffcf5c','#ff6b6b','#43e8c3','#9b8cff','#5b8cff','#fff'];
+function burst(){ // small sparkle for a correct answer
+  const cx=innerWidth/2, cy=innerHeight*0.42;
+  for(let i=0;i<26;i++)parts.push({x:cx,y:cy,vx:(Math.random()-.5)*9,vy:(Math.random()-.5)*9-2,
+    g:.18,s:Math.random()*7+3,c:PAL[i%PAL.length],life:50,max:50,rot:Math.random()*6,vr:(Math.random()-.5)*.4});
+}
+function confettiBurst(){ // big celebration
+  for(let i=0;i<160;i++)parts.push({x:Math.random()*innerWidth,y:-20,vx:(Math.random()-.5)*4,
+    vy:Math.random()*3+2,g:.12,s:Math.random()*9+4,c:PAL[i%PAL.length],life:120,max:120,
+    rot:Math.random()*6,vr:(Math.random()-.5)*.5});
+}
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400);}
+
+/* close modal on backdrop / Esc */
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+/* init */
+loadQuiz();
+</script>
